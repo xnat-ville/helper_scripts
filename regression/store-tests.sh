@@ -15,6 +15,9 @@ BASE=$REGRESSION_BASE/..
 #    [Alternate Target Port]     (default port is 8104)
 #    
 
+#$BASE/scripts/mrf_storescu_delegate.sh	\
+#	$REGRESSION_BASE/datasets/501_1-1.dcm BAY1 STORE_TEST SUBJECT_1 SESSION_1_x CNDA_BAY1 localhost 8104
+
 $BASE/scripts/mrf_storescu_delegate.sh	\
-	$REGRESSION_BASE/datasets/501_1-1.dcm BAY1 STORE_TEST SUBJECT_1 SESSION_1_x CNDA_BAY1 localhost 8104
+	$REGRESSION_BASE/datasets/501_1-1.dcm CCIR STORE_TEST SUBJECT_CCIR SESSION_CCIR_x CNDA_CCIR localhost 8104
 

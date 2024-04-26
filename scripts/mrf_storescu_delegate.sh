@@ -35,7 +35,7 @@ fi
 check_storescu_bin() {
  storescu_binx=$(find_storescu)
  if [[ -z "$storescu_binx" ]] ; then
-  echo "Could not find store_scu on our PATH nor using the variable DCM4CHE_BASE"
+  echo "Could not find storescu on our PATH nor using the variable DCM4CHE_BASE"
   echo "Script exits"
   exit 1
  fi
@@ -49,7 +49,7 @@ find_storescu() {
    storescu_path=`which storescux`
   else
    # Variable is set
-   storescu_path="$DCM4CHE_BASE/bin/store_scu"
+   storescu_path="$DCM4CHE_BASE/bin/storescu"
   fi
  fi
 
