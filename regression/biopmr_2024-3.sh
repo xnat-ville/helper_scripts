@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 REGRESSION_BASE=`dirname $0`
 BASE=$REGRESSION_BASE/..
