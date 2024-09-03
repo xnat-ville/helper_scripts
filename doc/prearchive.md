@@ -39,3 +39,32 @@ The standard output contains these data items:
 These flags will augment the output with more items.
  * -D Adds demographic fields (Patient Name and Patient ID)
  * -M Adds Modality and SOP Class information
+
+ ## prune.py
+This script prunes prearchive folders that do not contain any DICOM files.
+This will happen if some error occurs during the archive process.
+The program uses the CSV or JSON file produced by index_prearchive as input.
+It does not rescan the prearchive folder to look for candidate files.
+
+### Invocation
+```
+export PYTHONPATH=.../helper_scripts/python
+python3 -m prearchive.prune [flags] index-file
+```
+Flag values are:
+
+| Flag               | Description                                            |
+|--------------------|--------------------------------------------------------|
+| -l, --log          | Path to output log information                         |
+| -a, --age          | Minimum age in days for a folder to be deleted         |
+| -d, --dryrun       | Perform a dry run, but do not delete any files/folders |
+| -s, --silent       | Produce no log output                                  |
+| -v, --verbose      | Enable verbose output                                  |
+
+The program will assume the format of the index file (csv, json) by the file extension.
+Both file types include the same information needed to prune the prearchive.
+The index file is not updated during this operation.
+
+If the --output flag is not specified, output will be sent to the stdout.
+In the event the user specifies both --silent and --verbose, the --silent flag
+will be observed.

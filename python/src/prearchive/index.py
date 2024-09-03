@@ -52,7 +52,7 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
 # walks through the list of session_folders, reads select DICOM files from each
 # session folder, and updates the entry.
 # If neither of those flags are set, the function returns immediately without
-# modifying the sesson_folders data
+# modifying the session_folders data
 def secondary_prearchive_scan(args: argparse.Namespace, session_folders):
     if (args.demographics or args.modality):
         # Add auxiliary data
