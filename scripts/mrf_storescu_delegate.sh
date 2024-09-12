@@ -42,7 +42,7 @@ check_storescu_bin() {
 }
 
 find_storescu() {
- storescu_path=`which storescu`
+ storescu_path=`which storescux`
  if [[ $? -ne 0 ]] ; then
   if [ -z ${DCM4CHE_BASE+x} ] ; then
    # Variable is not set
