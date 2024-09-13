@@ -78,6 +78,12 @@ def is_timestamp_folder(folder: Path):
     except ValueError:
         return False
 
+
+# Function to log details to a log file (text format)
+def log_session(log_file, session_folder_path, timestamp_folder_name):
+    with open(log_file, mode='a') as log_f:
+        log_f.write(f"Timestamp Folder: {timestamp_folder_name}, Session Path: {session_folder_path}\n")
+
 # Helper function to process the timestamp folder and gather session data
 def process_timestamp_folder(args: argparse.Namespace, project_name: str, timestamp_folder: Path, session_folders):
     # Iterate over the session folders inside each timestamp
@@ -128,6 +134,12 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
             f1.dcm_files = dcm_files
 
             session_folders.append(f1)
+
+            # Log session folder and timestamp folder name if the log argument is provided
+            if args.log:
+                log_session(args.log, session_folder, f1.timestamp)
+
+
 
     #f2 = SessionFolder()
     #f2.session_path = "/opt/Customer-Support/CNDA/xnat-ville/helper_scripts/python/src/prearchive/y"
@@ -289,20 +301,43 @@ def index_output(args: argparse.Namespace, session_folders):
 
         print(f"Data has been written to CSV file: {args.csv}")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="List projects from an XNAT system")
-    parser.add_argument('-c', '--csv',             dest='csv',             help="Path to CSV output")
-    parser.add_argument('-j', '--json',            dest='json',            help="Path to CSV output")
-    parser.add_argument('-p', '--projects',        dest='projects',        help="Path to input list of projects to index")
-    parser.add_argument('-f', '--folders',         dest='folders',         help="Path to input list of folders to index")
-    parser.add_argument('-D', '--demographics',    dest='demographics',    help="Add demographic data to base output",  action='store_true')
-    parser.add_argument('-M', '--modality',        dest='modality',        help="Add demographic data to base output",  action='store_true')
-    parser.add_argument('prearchive_path',                                 help="Path to prearchive folder")
+
+    # CSV and JSON output options
+    parser.add_argument('-c', '--csv', dest='csv', help="Path to CSV output")
+    parser.add_argument('-j', '--json', dest='json', help="Path to JSON output")
+
+    # Optional project and folder input paths
+    parser.add_argument('-p', '--projects', dest='projects', help="Path to input list of projects to index")
+    parser.add_argument('-f', '--folders', dest='folders', help="Path to input list of folders to index")
+
+    # Flags for demographics and modality data
+    parser.add_argument('-D', '--demographics', dest='demographics', help="Add demographic data to base output",
+                        action='store_true')
+    parser.add_argument('-M', '--modality', dest='modality', help="Add modality data to base output",
+                        action='store_true')
+
+    # Log file path (optional, logs session details only if log file exists)
+    parser.add_argument('-l', '--log', dest='log', help="Path to log file for session details")
+
+    # Mandatory path to the prearchive folder
+    parser.add_argument('prearchive_path', help="Path to prearchive folder")
 
     args = parser.parse_args()
+
+    # Initialize an empty list to hold session folder objects
     session_folders = []
+
+    # Perform the initial scan of the prearchive directory
     initial_prearchive_scan(args, session_folders)
+
+    # Perform a secondary scan for demographics or modality if flags are set
     secondary_prearchive_scan(args, session_folders)
+
+    # Output the collected data to CSV, JSON, or stdout
     index_output(args, session_folders)
+
 
 
