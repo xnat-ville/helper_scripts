@@ -3,18 +3,13 @@
 index.py
 ---
 --------------------------------------------------------------------------------
-This application interacts with and creates an index of projects in an XNAT prearchive
+This application interacts with and creates an index of projects in the CNDA prearchive
 
 Example usage of the CLI:
 ```bash
 $ python3
 ```
 """
-
-# TODO: Implement handling for "Unassigned" projects in the prearchive. These might
-#  not exist in a separate folder and may require additional logic to detect and handle.
-#  You can ssh into a machine and check on server--HOW IS UNASSIGNED laid out
-
 __version__ = (1, 0, 0)
 
 import argparse
@@ -42,32 +37,45 @@ class SessionFolder:
         self.modalities       = set()
         self.sop_classes      = set()
 
-
 # Scans the prearchive folder structure and builds an array of SessionFolder objects.
 # This function scans for projects, timestamps, and sessions, and gathers basic metadata
 # (e.g., file counts, modification times). DICOM files are not opened or processed here.
-# Detailed metadata extraction (demographics or modality) occurs in later stages based on flags (-D, -M).
+# Detailed metadata extraction (ex. demographics or modality) occurs in later stages based on flags set.
 
 def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     # Define the path to the prearchive folder
     folder_path = Path(args.prearchive_path)
 
-    # List all directories (could be projects or directly timestamp folders if Unassigned)
-    projects_or_timestamps = folder_path.iterdir()
+    # If the user provided a list of top-level folders
+    if args.top_level_folders:
+        # Split the provided list by commas and process each folder
+        top_level_folders = args.top_level_folders.split(',')
+        for folder_name in top_level_folders:
+            folder_path_to_process = folder_path / folder_name.strip()
 
-    for project_or_timestamp in projects_or_timestamps:
-        if project_or_timestamp.is_dir():
-            # Case 1: Check if this is a timestamp folder directly (i.e., Unassigned project)
-            timestamp_folder = project_or_timestamp
-            if is_timestamp_folder(timestamp_folder):
-                # Treat as Unassigned project
-                process_timestamp_folder(args, "Unassigned", timestamp_folder, session_folders)
+            # Check if it's a valid directory
+            if folder_path_to_process.is_dir():
+                # Case 1: If the folder is a timestamp folder (unassigned)
+                if is_timestamp_folder(folder_path_to_process):
+                    # Process as an unassigned project and log it
+                    process_timestamp_folder(args, "Unassigned", folder_path_to_process, session_folders)
+                else:
+                    # Case 2: Process as a regular project folder and log it
+                    process_project_folder(args, folder_path_to_process, session_folders)
             else:
-                # Case 2: Process as a regular project folder
-                project_name = project_or_timestamp.name
-                for timestamp_folder in project_or_timestamp.iterdir():
-                    if timestamp_folder.is_dir():  # Ensure it's a directory
-                        process_timestamp_folder(args, project_name, timestamp_folder, session_folders)
+                print(f"Warning: {folder_path_to_process} is not a valid directory.")
+
+    # If no list is provided, scan the full prearchive
+    else:
+        # The original logic to scan the full prearchive remains here
+        projects_or_timestamps = folder_path.iterdir()
+        for project_or_timestamp in projects_or_timestamps:
+            if project_or_timestamp.is_dir():
+                if is_timestamp_folder(project_or_timestamp):
+                    process_timestamp_folder(args, "Unassigned", project_or_timestamp, session_folders)
+                else:
+                    process_project_folder(args, project_or_timestamp, session_folders)
+
 
 # Helper function to check if a directory is a timestamp folder in the format YYYYMMDD_HHMMSSsss
 def is_timestamp_folder(folder: Path):
@@ -78,17 +86,30 @@ def is_timestamp_folder(folder: Path):
     except ValueError:
         return False
 
-
 # Function to log details to a log file (text format)
-def log_session(log_file, session_folder_path, timestamp_folder_name):
-    with open(log_file, mode='a') as log_f:
-        log_f.write(f"Timestamp Folder: {timestamp_folder_name}, Session Path: {session_folder_path}\n")
+def log_session(log_file, session_folder, timestamp):
+    with open(log_file, mode='a') as log_f:  # 'w' means append
+        log_f.write(f"Timestamp Folder: {timestamp}, Session Path: {session_folder.session_path}\n")
+
+    # Add confirmation message after writing to the log file
+    #print(f"Data has been written to log file: {log_file}")
+
+# Helper function to process project-named folders.
+# This function iterates through the timestamp folders inside a project folder,
+# passing each timestamp folder to the process_timestamp_folder function.
+# It is used when scanning specific project-named folders or the entire prearchive.
+# Helper function to process project-named folders.
+def process_project_folder(args: argparse.Namespace, project_folder: Path, session_folders):
+    project_name = project_folder.name
+    for timestamp_folder in project_folder.iterdir():
+        if timestamp_folder.is_dir():
+            process_timestamp_folder(args, project_name, timestamp_folder, session_folders)
 
 # Helper function to process the timestamp folder and gather session data
 def process_timestamp_folder(args: argparse.Namespace, project_name: str, timestamp_folder: Path, session_folders):
     # Iterate over the session folders inside each timestamp
     for session_folder in timestamp_folder.iterdir():
-        if session_folder.is_dir():  # Ensure it's a directory
+        if session_folder.is_dir():
             session_label = session_folder.name
 
             # Initialize counters and variables
@@ -99,30 +120,21 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
             scan_folders = 0
 
             # Iterate over all items in the session folder
-            for item in session_folder.rglob('*'):  # Recursively scan the folder
+            for item in session_folder.rglob('*'):
                 scans_folder = session_folder / 'SCANS'
                 if scans_folder.is_dir():
-                    # Only count the top-level directories in the SCANS folder (scan series)
                     scan_folders = sum(1 for folder in scans_folder.iterdir() if folder.is_dir())
                 if item.is_file():
-                    total_files += 1  # Count all files
+                    total_files += 1
                     if item.suffix == '.dcm':
-                        dcm_files += 1  # Count only .dcm files
-                    # Track the most recent modification time
+                        dcm_files += 1
                     file_time = item.stat().st_mtime
                     if file_time > most_recent_unix_timestamp:
                         most_recent_unix_timestamp = file_time
                         most_recent_formatted_timestamp = datetime.fromtimestamp(most_recent_unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-            # Create a new session object and append it to the session_folders list
             f1 = SessionFolder()
-
-            # Set the project path differently for assigned vs unassigned projects
-            if project_name == "Unassigned":
-                f1.project_path = str(timestamp_folder)  # Use the full path to the timestamp folder
-            else:
-                f1.project_path = str(timestamp_folder.parent)  # Use the parent folder (project folder)
-
+            f1.project_path = str(timestamp_folder.parent) if project_name != "Unassigned" else str(timestamp_folder)
             f1.project_label = project_name
             f1.timestamp_folder = timestamp_folder
             f1.timestamp = timestamp_folder.name
@@ -135,11 +147,9 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
 
             session_folders.append(f1)
 
-            # Log session folder and timestamp folder name if the log argument is provided
+            # Log the session if a log file is specified
             if args.log:
-                log_session(args.log, session_folder, f1.timestamp)
-
-
+                log_entries.append(f"Timestamp Folder: {f1.timestamp}, Session Path: {f1.session_path}\n")
 
     #f2 = SessionFolder()
     #f2.session_path = "/opt/Customer-Support/CNDA/xnat-ville/helper_scripts/python/src/prearchive/y"
@@ -178,8 +188,8 @@ def fill_demographics(session_folder: SessionFolder):
                     session_folder.patient_name = dicom_data.PatientName if 'PatientName' in dicom_data else "Unknown"
                     session_folder.patient_id = dicom_data.PatientID if 'PatientID' in dicom_data else "Unknown"
 
-                    print(f"Extracted demographics from {first_file}:")
-                    print(f"Patient Name: {session_folder.patient_name}, Patient ID: {session_folder.patient_id}")
+                    #print(f"Extracted demographics from {first_file}:")
+                    #print(f"Patient Name: {session_folder.patient_name}, Patient ID: {session_folder.patient_id}")
 
                 except Exception as e:
                     print(f"Error reading DICOM file {first_file}: {e}")
@@ -220,8 +230,8 @@ def fill_modality(session_folder: SessionFolder):
                     sop_class_uid = dicom_data.SOPClassUID if 'SOPClassUID' in dicom_data else "Unknown"
                     session_folder.sop_classes.add(sop_class_uid)
 
-                    print(f"Extracted modality from {first_file}:")
-                    print(f"Modality: {modality}, SOP Class UID: {sop_class_uid}")
+                    #print(f"Extracted modality from {first_file}:")
+                    #print(f"Modality: {modality}, SOP Class UID: {sop_class_uid}")
 
                 except Exception as e:
                     print(f"Error reading DICOM file {first_file}: {e}")
@@ -322,6 +332,9 @@ if __name__ == "__main__":
     # Log file path (optional, logs session details only if log file exists)
     parser.add_argument('-l', '--log', dest='log', help="Path to log file for session details")
 
+    parser.add_argument('-t', '--top-level-folders',
+                        help="Comma-separated list of top-level folders to process (project folders or unassigned timestamp folders)")
+
     # Mandatory path to the prearchive folder
     parser.add_argument('prearchive_path', help="Path to prearchive folder")
 
@@ -329,6 +342,7 @@ if __name__ == "__main__":
 
     # Initialize an empty list to hold session folder objects
     session_folders = []
+    log_entries = []
 
     # Perform the initial scan of the prearchive directory
     initial_prearchive_scan(args, session_folders)
@@ -338,6 +352,12 @@ if __name__ == "__main__":
 
     # Output the collected data to CSV, JSON, or stdout
     index_output(args, session_folders)
+
+    if args.log:
+        with open(args.log, mode='w') as log_f:
+            log_f.writelines(log_entries)
+        print(f"Data has been written to log file: {args.log}")
+
 
 
 
