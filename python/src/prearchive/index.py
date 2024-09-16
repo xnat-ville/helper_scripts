@@ -3,7 +3,7 @@
 index.py
 ---
 --------------------------------------------------------------------------------
-This application interacts with and creates an index of projects in the CNDA prearchive
+This application interacts with and creates an index of projects in the CNDA prearchive.
 
 Example usage of the CLI:
 ```bash
@@ -18,8 +18,11 @@ import pydicom
 from datetime import datetime
 from pathlib import Path
 
+#This class holds relevant details about each session folder found during the prearchive scanning process
 class SessionFolder:
-    def __init__(self):
+
+  #Initializes a new SessionFolder object with default values for all attributes.
+  def __init__(self):
         self.project_path     = ""
         self.project_label    = ""
         self.timestamp_folder = ""
@@ -30,18 +33,18 @@ class SessionFolder:
         self.scan_folders     = 0 #number of scan series folders in a session
         self.total_files      = 0 # total number of file
         self.dcm_files        = 0 #total amount of dcm files
-
-        #self.symbolic_links   = 0
         self.patient_name     = ""
         self.patient_id       = ""
         self.modalities       = set()
         self.sop_classes      = set()
+      # self.symbolic_links   = 0
 
-# Scans the prearchive folder structure and builds an array of SessionFolder objects.
-# This function scans for projects, timestamps, and sessions, and gathers basic metadata
-# (e.g., file counts, modification times). DICOM files are not opened or processed here.
-# Detailed metadata extraction (ex. demographics or modality) occurs in later stages based on flags set.
-
+"""
+Scans the prearchive folder structure and builds an array of SessionFolder objects.
+This function scans for projects, timestamps, and sessions, and gathers basic metadata
+(e.g., file counts, modification times). DICOM files are not opened or processed here.
+Detailed metadata extraction (ex. demographics or modality) occurs in secondary prearchive scan based on flags set.
+"""
 def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     # Define the path to the prearchive folder
     folder_path = Path(args.prearchive_path)
@@ -86,26 +89,19 @@ def is_timestamp_folder(folder: Path):
     except ValueError:
         return False
 
-# Function to log details to a log file (text format)
-def log_session(log_file, session_folder, timestamp):
-    with open(log_file, mode='a') as log_f:  # 'w' means append
-        log_f.write(f"Timestamp Folder: {timestamp}, Session Path: {session_folder.session_path}\n")
-
-    # Add confirmation message after writing to the log file
-    #print(f"Data has been written to log file: {log_file}")
-
-# Helper function to process project-named folders.
-# This function iterates through the timestamp folders inside a project folder,
-# passing each timestamp folder to the process_timestamp_folder function.
-# It is used when scanning specific project-named folders or the entire prearchive.
-# Helper function to process project-named folders.
+"""
+Helper function to process project-named folders.
+This function iterates through the timestamp folders inside a project folder,
+passing each timestamp folder to the process_timestamp_folder function.
+It is used when scanning specific project-named folders or the entire prearchive.
+"""
 def process_project_folder(args: argparse.Namespace, project_folder: Path, session_folders):
     project_name = project_folder.name
     for timestamp_folder in project_folder.iterdir():
         if timestamp_folder.is_dir():
             process_timestamp_folder(args, project_name, timestamp_folder, session_folders)
 
-# Helper function to process the timestamp folder and gather session data
+# Function to process the timestamp folder and gather session data
 def process_timestamp_folder(args: argparse.Namespace, project_name: str, timestamp_folder: Path, session_folders):
     # Iterate over the session folders inside each timestamp
     for session_folder in timestamp_folder.iterdir():
