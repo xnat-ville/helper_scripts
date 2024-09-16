@@ -156,7 +156,7 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
 # For demographics (-D), it extracts and stores the patient name and ID.
 # For modality (-M), it extracts the DICOM modality and SOP Class UID.
 
-def fill_demographics(session_folder: SessionFolder):
+def fill_session_data(session_folder: SessionFolder, args: argparse.Namespace):
     folder_path = Path(session_folder.session_path)
     scans_folder = folder_path / 'SCANS'
 
@@ -174,18 +174,26 @@ def fill_demographics(session_folder: SessionFolder):
             # Check if the DICOM or secondary folder exists
             if dicom_folder.is_dir():
                 file_list = list(dicom_folder.glob('*.dcm'))
+                if not file_list:
+                    continue
                 first_file = file_list[0]
 
                 # Pick the first DICOM file in the folder
                 try:
                     dicom_data = pydicom.dcmread(first_file)
 
-                    # Extracts patient name and patient ID
-                    session_folder.patient_name = dicom_data.PatientName if 'PatientName' in dicom_data else "Unknown"
-                    session_folder.patient_id = dicom_data.PatientID if 'PatientID' in dicom_data else "Unknown"
+                    # Extract demographics data if the -D flag is set
+                    if args.demographics:
+                        session_folder.patient_name = dicom_data.PatientName if 'PatientName' in dicom_data else "Unknown"
+                        session_folder.patient_id = dicom_data.PatientID if 'PatientID' in dicom_data else "Unknown"
 
-                    #print(f"Extracted demographics from {first_file}:")
-                    #print(f"Patient Name: {session_folder.patient_name}, Patient ID: {session_folder.patient_id}")
+                    # Extract modality data if the -M flag is set
+                    if args.modality:
+                        modality = dicom_data.Modality if 'Modality' in dicom_data else "Unknown"
+                        session_folder.modalities.add(modality)
+
+                        sop_class_uid = dicom_data.SOPClassUID if 'SOPClassUID' in dicom_data else "Unknown"
+                        session_folder.sop_classes.add(sop_class_uid)
 
                 except Exception as e:
                     print(f"Error reading DICOM file {first_file}: {e}")
@@ -194,64 +202,17 @@ def fill_demographics(session_folder: SessionFolder):
         print(f"Scans folder not found in {session_folder.session_path}")
 
 
-def fill_modality(session_folder: SessionFolder):
-    folder_path = Path(session_folder.session_path)
-    scans_folder = folder_path / 'SCANS'
-
-    # Check if the scans folder exists
-    if scans_folder.is_dir():
-        # Iterate over the numbered scan series folders
-        for scan_series_folder in scans_folder.iterdir():
-            if scan_series_folder.is_dir():
-                dicom_folder = scan_series_folder / 'DICOM'
-
-            # If "DICOM" folder doesn't exist, check for "secondary"
-            if not dicom_folder.is_dir():
-                dicom_folder = scan_series_folder / 'secondary'
-
-            # Check if the DICOM or secondary folder exists
-            if dicom_folder.is_dir():
-                file_list = list(dicom_folder.glob('*.dcm'))
-                first_file = file_list[0]
-
-                # Pick the first DICOM file in the folder
-                try:
-                    dicom_data = pydicom.dcmread(first_file)
-
-                    # Extracts Modality and adds it to the to modalities set
-                    modality = dicom_data.Modality if 'Modality' in dicom_data else "Unknown"
-                    session_folder.modalities.add(modality)
-
-                    # Extracts SOP Class UID and adds it to the sop_classes set
-                    sop_class_uid = dicom_data.SOPClassUID if 'SOPClassUID' in dicom_data else "Unknown"
-                    session_folder.sop_classes.add(sop_class_uid)
-
-                    #print(f"Extracted modality from {first_file}:")
-                    #print(f"Modality: {modality}, SOP Class UID: {sop_class_uid}")
-
-                except Exception as e:
-                    print(f"Error reading DICOM file {first_file}: {e}")
-                    return  # Exit after the first failure
-    else:
-        print(f"Scans folder not found in {session_folder.session_path}")
-
-
-# This function performs a secondary scan of the prearchive if any flags are set. It processes the session folders, reads the first DICOM file
-# found, and updates the session information accordingly.
+# This function performs a secondary scan of the prearchive. If the -D (demographics) or
+# -M (modality) flags are set, it processes the session folders, reads the first DICOM file found,
+# and updates the session information accordingly.
 # If neither flag is set, the function exits without modifying the session data.
 
 def secondary_prearchive_scan(args: argparse.Namespace, session_folders):
     for session_folder in session_folders:
         print(session_folder.session_path)
 
-        # If demographics flag is set, call demographics function
-        if args.demographics:
-            fill_demographics(session_folder)
-
-        # If modality flag is set, call modality function
-        if args.modality:
-            fill_modality(session_folder)
-
+        # Call the combined function to fill both demographics and modality data
+        fill_session_data(session_folder, args)
 
 # Generates output for the session data collected. If the --csv flag is provided, the output
 # is written to a CSV file. If no CSV file is provided, output is sent to stdout.
