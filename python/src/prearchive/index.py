@@ -54,30 +54,31 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
         # Split the provided list by commas and process each folder
         top_level_folders = args.top_level_folders.split(',')
         for folder_name in top_level_folders:
-            folder_path_to_process = folder_path / folder_name.strip()
+            folder_name = folder_name.strip()
+
+            # Special case: handle 'Find All Unassigned Projects'
+            if folder_name == "Unassigned":
+                print("Scanning all unassigned (timestamp) folders...")
+                # Process all timestamp folders in the prearchive directory
+                for timestamp_folder in folder_path.iterdir():
+                    if timestamp_folder.is_dir() and is_timestamp_folder(timestamp_folder):
+                        process_timestamp_folder(args, "Unassigned", timestamp_folder, session_folders)
+                continue
+
+            # Otherwise, process as usual
+            folder_path_to_process = folder_path / folder_name
 
             # Check if it's a valid directory
             if folder_path_to_process.is_dir():
-                # Case 1: If the folder is a timestamp folder (unassigned)
                 if is_timestamp_folder(folder_path_to_process):
                     # Process as an unassigned project and log it
                     process_timestamp_folder(args, "Unassigned", folder_path_to_process, session_folders)
                 else:
-                    # Case 2: Process as a regular project folder and log it
+                    # Process as a regular project folder and log it
                     process_project_folder(args, folder_path_to_process, session_folders)
             else:
                 print(f"Warning: {folder_path_to_process} is not a valid directory.")
 
-    # If no list is provided, scan the full prearchive
-    else:
-        # The original logic to scan the full prearchive remains here
-        projects_or_timestamps = folder_path.iterdir()
-        for project_or_timestamp in projects_or_timestamps:
-            if project_or_timestamp.is_dir():
-                if is_timestamp_folder(project_or_timestamp):
-                    process_timestamp_folder(args, "Unassigned", project_or_timestamp, session_folders)
-                else:
-                    process_project_folder(args, project_or_timestamp, session_folders)
 
 
 # Helper function to check if a directory is a timestamp folder in the format YYYYMMDD_HHMMSSsss
