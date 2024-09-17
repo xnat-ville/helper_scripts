@@ -226,7 +226,7 @@ def fill_session_data(session_folder: SessionFolder, args: argparse.Namespace):
 
 def secondary_prearchive_scan(args: argparse.Namespace, session_folders):
     for session_folder in session_folders:
-        print(session_folder.session_path)
+        #print(session_folder.session_path)
 
         # Call the combined function to fill both demographics and modality data
         fill_session_data(session_folder, args)
@@ -327,6 +327,13 @@ if __name__ == "__main__":
 
     # Output the collected data to CSV, JSON, or stdout
     index_output(args, session_folders)
+
+    # Now that logging is complete, print the log written message
+    if args.log:
+        print(f"Log has been written to txt file: {args.log}")
+
+    # tail -f will let you see progress of the logging in the terminal
+
 
     #tail -f will let you see progress of the logging in terminal
 
