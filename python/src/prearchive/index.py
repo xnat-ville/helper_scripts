@@ -80,7 +80,7 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     # Open the log file if specified
     log_f = None
     if args.log:
-        log_f = open(args.log, 'a')
+        log_f = open(args.log, 'w')
 
     try:
         # Use the helper function to read the list from the file if provided
