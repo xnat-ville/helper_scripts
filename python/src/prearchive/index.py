@@ -330,10 +330,10 @@ if __name__ == "__main__":
 
     #tail -f will let you see progress of the logging in terminal
 
-    # The text document will be made by someone going into the prearchive folder and running ls -d CCIR* 2020* > /tmp/project_list.txt
-    # or they might run ls -d CCIR* > /tmp/CCIR.txt
-    # or they might run ls -d 2023* > /tmp/2023.txt
+    # The text document will be made by someone going into the prearchive directory and running ls -d CCIR* 2020* > /tmp/project_list.txt
+    # or they might run ls -d CCIR* > /tmp/project_list.txt
+    # or they might run ls -d 2023* > /tmp/project_list.txt
 
-
+    # to follows status is tail -f /tmp/log_of_prearchive.txt
 
 
