@@ -162,7 +162,7 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
 
             # Log the session if a log file is specified
             if args.log:
-                log_f.write(f"{f1.timestamp}, {f1.session_path}")
+                log_f.write(f"{f1.timestamp}, {f1.session_path}\n")
 
     #f2 = SessionFolder()
     #f2.session_path = "/opt/Customer-Support/CNDA/xnat-ville/helper_scripts/python/src/prearchive/y"
