@@ -2,7 +2,7 @@ import csv
 
 # Define the input and output file paths
 input_file = '/tmp/prearchive.csv'
-output_file = '/tmp/carrot_in_name_or_id.csv'
+output_file = '/tmp/carrots.csv'
 
 # Open the input CSV file for reading
 with open(input_file, 'r') as infile:
