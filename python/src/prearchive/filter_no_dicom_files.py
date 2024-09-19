@@ -5,18 +5,17 @@ input_file = '/tmp/prearchive.csv'
 output_file = '/tmp/no_dicom_files.csv'
 
 # Open the input CSV file for reading
-with open(input_file, 'r') as infile:
+with open(input_file, 'r') as infile, open(output_file, 'w', newline='') as outfile:
     reader = csv.DictReader(infile)
+    writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
     
-    # Filter rows where 'DCM Files' is 0
-    filtered_rows = [row for row in reader if row['DCM Files'] == '0']
+    # Write the headers to the output file
+    writer.writeheader()
     
-    # Write the filtered rows to the output CSV file
-    with open(output_file, 'w', newline='') as outfile:
-        writer = csv.DictWriter(outfile, fieldnames=reader.fieldnames)
-        
-        # Write the headers and the filtered rows
-        writer.writeheader()
-        writer.writerows(filtered_rows)
+    # Process each row line by line
+    for row in reader:
+        # Check if 'DCM Files' is 0 and write to the output file if true
+        if row['DCM Files'] == '0':
+            writer.writerow(row)
 
 print(f"Filtered data written to {output_file}")
