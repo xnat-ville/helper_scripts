@@ -35,7 +35,7 @@ class SessionFolder:
         self.timestamp =        ""
         self.session_path     = ""
         self.session_label    = ""
-        self.most_recent_time = "" #time of the newest file under the session folder
+        self.last_modified_time = ""
         self.scan_folders     = 0 #number of scan series folders in a session
         self.total_files      = 0 # total number of file
         self.dcm_files        = 0 #total amount of dcm files
@@ -128,8 +128,8 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
             # Initialize counters and variables
             total_files = 0
             dcm_files = 0
-            most_recent_unix_timestamp = 0
-            most_recent_formatted_timestamp = 0
+            last_modified_unix_timestamp = 0
+            last_modified_formatted_timestamp = ""
             scan_folders = 0
 
             # Iterate over all items in the session folder
@@ -142,9 +142,9 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
                     if item.suffix == '.dcm':
                         dcm_files += 1
                     file_time = item.stat().st_mtime
-                    if file_time > most_recent_unix_timestamp:
-                        most_recent_unix_timestamp = file_time
-                        most_recent_formatted_timestamp = datetime.fromtimestamp(most_recent_unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                    if file_time > last_modified_unix_timestamp:
+                        last_modified_unix_timestamp = file_time
+                        last_modified_formatted_timestamp = datetime.fromtimestamp(last_modified_unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
             f1 = SessionFolder()
             f1.project_path = str(timestamp_folder.parent) if project_name != "Unassigned" else str(timestamp_folder)
@@ -153,7 +153,7 @@ def process_timestamp_folder(args: argparse.Namespace, project_name: str, timest
             f1.timestamp = timestamp_folder.name
             f1.session_path = session_folder
             f1.session_label = session_label
-            f1.most_recent_time = most_recent_formatted_timestamp
+            f1.last_modified_time = last_modified_formatted_timestamp
             f1.scan_folders = scan_folders
             f1.total_files = total_files
             f1.dcm_files = dcm_files
@@ -240,7 +240,7 @@ def index_output(args: argparse.Namespace, session_folders):
         with open(args.csv, mode='w', newline='') as csv_file:
             # Start with the base fields
             fieldnames = ['Project Path', 'Project Label', 'Session Timestamp Folder', 'Timestamp',
-                          'Session Path', 'Session Label', 'Most Recent Time', 'Scan Folders', 'Total Files',
+                          'Session Path', 'Session Label', 'Last Modified Time', 'Scan Folders', 'Total Files',
                           'DCM Files']
 
             # Add demographic fields if the -D flag is set
@@ -264,7 +264,7 @@ def index_output(args: argparse.Namespace, session_folders):
                     'Timestamp': session.timestamp,
                     'Session Path': session.session_path,
                     'Session Label': session.session_label,
-                    'Most Recent Time': session.most_recent_time,
+                    'Last Modified Time': session.last_modified_time,
                     'Scan Folders': session.scan_folders,
                     'Total Files': session.total_files,
                     'DCM Files': session.dcm_files
