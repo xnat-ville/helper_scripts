@@ -91,9 +91,9 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     try:
         # Use the helper function to read the list from the file if provided
         if args.top_level_folders:
-            top_level_folders = read_project_list(args.top_level_folders, log_f)
+            top_level_folders, success = read_project_list(args.top_level_folders, log_f)
             # Stop if reading the project list failed
-            if not top_level_folders:
+            if not success:
                 print("Error: No valid project list found, aborting CSV creation.")
                 return  # Exit the function early to prevent CSV creation
         else:
@@ -116,6 +116,8 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
                     print(f"Warning: {folder_path_to_process} is not a valid directory.")
         else:
             print("Error: No top-level folders found, aborting process.")
+            if log_f:
+                log_f.write("Error: No top-level folders found, aborting process.\n")
     finally:
         if log_f:
             log_f.close()  # Ensure the log file is closed properly
