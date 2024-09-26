@@ -53,23 +53,18 @@ Detailed metadata extraction (ex. demographics or modality) occurs in secondary 
 """
 
 #This function reads the project list from the given .txt file.
-def read_project_list(file_path: str, log_f=None):
+def read_project_list(file_path: str):
     try:
         with open(file_path, 'r') as file:
             projects_or_timestamps = [line.strip() for line in file if line.strip()]
-        return projects_or_timestamps, True  # Return True to indicate success
+        return projects_or_timestamps
     except FileNotFoundError:
-        error_message = f"Error: The file {file_path} was not found."
-        print(error_message)
-        if log_f:
-            log_f.write(error_message + "\n")  # Log the error to the log file
-        return [], False  # Return False to indicate failure
+        print(f"Error: The file {file_path} was not found.")
+        return []
     except Exception as e:
-        error_message = f"Error reading file {file_path}: {e}"
-        print(error_message)
-        if log_f:
-            log_f.write(error_message + "\n")  # Log the error to the log file
-        return [], False
+        print(f"Error reading file {file_path}: {e}")
+        return []
+
 
 # Helper function to check if a directory is a timestamp folder in the format YYYYMMDD_HHMMSSsss
 def is_timestamp_folder(folder: Path):
@@ -91,13 +86,11 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     try:
         # Use the helper function to read the list from the file if provided
         if args.top_level_folders:
-            top_level_folders, success = read_project_list(args.top_level_folders, log_f)
-            if not success:
-                return  # Stop the function if reading the project list failed
+            top_level_folders = read_project_list(args.top_level_folders)
         else:
             top_level_folders = [folder.name for folder in folder_path.iterdir() if folder.is_dir()]
 
-        # Process each project or timestamp if the list was successfully read
+        # Process each project or timestamp
         for folder_name in top_level_folders:
             folder_name = folder_name.strip()
 
@@ -293,6 +286,7 @@ def index_output(args: argparse.Namespace, session_folders):
                 writer.writerow(row)
 
         print(f"Data has been written to CSV file: {args.csv}")
+
 
 
 if __name__ == "__main__":
