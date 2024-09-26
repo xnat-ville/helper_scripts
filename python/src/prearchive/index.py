@@ -53,16 +53,24 @@ Detailed metadata extraction (ex. demographics or modality) occurs in secondary 
 """
 
 #This function reads the project list from the given .txt file.
-def read_project_list(file_path: str):
+def read_project_list(file_path: str, log_f=None):
     try:
         with open(file_path, 'r') as file:
             projects_or_timestamps = [line.strip() for line in file if line.strip()]
         return projects_or_timestamps
     except FileNotFoundError:
-        print(f"Error: The file {file_path} was not found.")
-        return []
+        error_message = f"Error: The file {file_path} was not found."
+        print(error_message)
+        if log_f:
+            log_f.write(error_message + "\n")  # Log the error to the log file
+            log_f.flush()  # Ensure the message is written immediately
+        return []  # Return an empty list indicating failure
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        error_message = f"Error reading file {file_path}: {e}"
+        print(error_message)
+        if log_f:
+            log_f.write(error_message + "\n")
+            log_f.flush()
         return []
 
 
