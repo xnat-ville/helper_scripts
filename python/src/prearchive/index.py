@@ -91,28 +91,35 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     try:
         # Use the helper function to read the list from the file if provided
         if args.top_level_folders:
-            top_level_folders, success = read_project_list(args.top_level_folders, log_f)
-            if not success:
-                return  # Stop the function if reading the project list failed
+            top_level_folders = read_project_list(args.top_level_folders, log_f)
+            # Stop if reading the project list failed
+            if not top_level_folders:
+                print("Error: No valid project list found, aborting CSV creation.")
+                return  # Exit the function early to prevent CSV creation
         else:
             top_level_folders = [folder.name for folder in folder_path.iterdir() if folder.is_dir()]
 
-        # Process each project or timestamp if the list was successfully read
-        for folder_name in top_level_folders:
-            folder_name = folder_name.strip()
+        # Proceed only if top_level_folders is not empty
+        if top_level_folders:
+            # Process each project or timestamp
+            for folder_name in top_level_folders:
+                folder_name = folder_name.strip()
 
-            # Process as usual
-            folder_path_to_process = folder_path / folder_name
-            if folder_path_to_process.is_dir():
-                if is_timestamp_folder(folder_path_to_process):
-                    process_timestamp_folder(args, "Unassigned", folder_path_to_process, session_folders, log_f)
+                # Process as usual
+                folder_path_to_process = folder_path / folder_name
+                if folder_path_to_process.is_dir():
+                    if is_timestamp_folder(folder_path_to_process):
+                        process_timestamp_folder(args, "Unassigned", folder_path_to_process, session_folders, log_f)
+                    else:
+                        process_project_folder(args, folder_path_to_process, session_folders, log_f)
                 else:
-                    process_project_folder(args, folder_path_to_process, session_folders, log_f)
-            else:
-                print(f"Warning: {folder_path_to_process} is not a valid directory.")
+                    print(f"Warning: {folder_path_to_process} is not a valid directory.")
+        else:
+            print("Error: No top-level folders found, aborting process.")
     finally:
         if log_f:
             log_f.close()  # Ensure the log file is closed properly
+
 
 """
 Helper function to process project-named folders.
