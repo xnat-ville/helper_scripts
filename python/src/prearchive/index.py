@@ -94,7 +94,7 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     try:
         # Use the helper function to read the list from the file if provided
         if args.top_level_folders:
-            top_level_folders = read_project_list(args.top_level_folders)
+            top_level_folders = read_project_list(args.top_level_folders, log_f)  # Pass log_f to read_project_list
         else:
             top_level_folders = [folder.name for folder in folder_path.iterdir() if folder.is_dir()]
 
@@ -114,6 +114,7 @@ def initial_prearchive_scan(args: argparse.Namespace, session_folders):
     finally:
         if log_f:
             log_f.close()  # Ensure the log file is closed properly
+
 
 """
 Helper function to process project-named folders.
