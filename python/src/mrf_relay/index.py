@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 import pydicom
 
-# Define function to parse command-line arguments
+# Define function to parse the command-line arguments
 def parse_args():
     parser = argparse.ArgumentParser(description="Scan MRF Relay storage folders and extract DICOM info.")
     parser.add_argument('-s', '--start-date', type=str, help="Start date in YYYYMMDD format")
